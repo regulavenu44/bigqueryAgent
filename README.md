@@ -175,6 +175,34 @@ SMTP_FROM_EMAIL=optional+from@example.com
     - `requirements.txt` — Python dependencies
     - `chat-ui/package.json` — frontend dependencies and scripts
 
+    ## Architecture Overview
+
+-```mermaid
+graph LR
+    subgraph Frontend
+        UI["Next.js chat UI"]
+    end
+    subgraph Backend
+        Router["FastAPI router layer"] --> Health["/health endpoint + caching"]
+        Router --> Chat["/chat router + agent"]
+        Router --> Reports["/reports routes (scheduler)" ]
+        Router --> Auth["/auth + session state"]
+    end
+    subgraph Services
+        Agent["BigQuerySalesAgent"]
+        Scheduler["SchedulerService (APScheduler) + EmailService"]
+        Storage["backend/data/*.json" ]
+    end
+    UI --> Router
+    Chat --> Agent
+    Reports --> Scheduler
+    Scheduler --> Agent
+    Scheduler --> Email["SMTP / configured recipients"]
+    Scheduler --> Storage
+    Agent --> Data["BigQuery via MCP"]
+    Health --> Storage
+-```
+
     ## Development Notes
 
     - Backend creates the agent on startup via `create_app()` in `backend/app.py` and registers routes under `backend/api/routes`.
